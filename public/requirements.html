@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Software Tool Request</title>
+    <style>
+        /* ... (Same CSS styles as before) ... */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        /* ... rest of the styles ... */
+    </style>
+</head>
+<body>
+    <h1>AI-Powered Tool for Automated Golang Tools Development</h1>
+
+    <div id="tabs">
+        <div class="tab active" data-tab="requestTab">Request Software Tool</div>
+        <div class="tab" data-tab="promptTab">Prompt Text</div>
+    </div>
+    
+    <div id="requestTab" class="tabContent active">
+        <form id="requestForm">
+            <h1>Request a Software Tool</h1>
+            <p>Please select your requirements:</p>
+            <div id="requirementsList">
+                <!-- Requirements will be dynamically inserted here -->
+            </div>
+        </form>
+    </div>
+    
+    <div id="promptTab" class="tabContent">
+        <h1>Prompt Text</h1>
+
+        <label for="aiModel">Select AI Model:</label><br>
+        <select id="aiModel" form="requestForm" required>
+            <option value="gpt-4o-mini" selected="selected">GPT-4o Mini</option>
+            <option value="gpt-4">GPT-4</option>
+            <option value="gpt-4-mini">GPT-4 Mini</option>
+            <option value="gpt-3.5">GPT-3.5</option>
+            <option value="davinci">Davinci</option>
+            <option value="curie">Curie</option>
+            <option value="babbage">Babbage</option>
+            <option value="ada">Ada</option>
+        </select>
+
+        <br><br>
+
+        <label for="temperature">Enter Temperature:</label><br>
+        <input type="number" id="temperature" name="temperature" form="requestForm" step="0.01" value="0" required><br><br>
+
+        <textarea id="promptText" form="requestForm" rows="10" cols="80" placeholder="Enter additional prompt text here...">
+As an entrepreneur, you need to give your project a context in one sentence.
+
+Does this context: "${requirements}"
+
+Meet this need?
+
+Please answer in JSON format: { 
+    "Result": "Yes" or "No", 
+    "Details": 
+        If 'No', recommend an effective context.
+        If 'Yes', explain why it's good.
+}
+        </textarea>
+    </div>
+    
+    <div id="submitButton">
+        <input type="submit" form="requestForm" value="Submit">
+    </div>
+    
+    <div id="response"></div>
+    
+    <script>
+        // Tab switching logic
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tabContent');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove 'active' class from all tabs and tab contents
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Add 'active' class to the clicked tab and corresponding content
+                tab.classList.add('active');
+                const tabId = tab.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // Fetch and display 40 requirements on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Fetch the 40 requirements from the server
+            try {
+                const response = await fetch('/api/generate-requirements');
+                const data = await response.json();
+                const requirements = data.requirements; // Assuming the server returns { requirements: [...] }
+
+                const requirementsList = document.getElementById('requirementsList');
+                requirementsList.innerHTML = ''; // Clear any existing content
+
+                requirements.forEach((requirement, index) => {
+                    const requirementDiv = document.createElement('div');
+                    requirementDiv.classList.add('requirement');
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `requirement${index + 1}`;
+                    checkbox.name = 'requirements';
+                    checkbox.value = requirement;
+
+                    const label = document.createElement('label');
+                    label.setAttribute('for', `requirement${index + 1}`);
+                    label.textContent = requirement;
+
+                    requirementDiv.appendChild(checkbox);
+                    requirementDiv.appendChild(label);
+
+                    requirementsList.appendChild(requirementDiv);
+                });
+            } catch (error) {
+                console.error('Error fetching requirements:', error);
+            }
+        });
+        
+        // Form submission logic
+        document.getElementById('requestForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const requirementElements = document.querySelectorAll('input[name="requirements"]:checked');
+            const requirements = Array.from(requirementElements).map(el => el.value);
+
+            const promptText = document.getElementById('promptText').value;
+            const aiModel = document.getElementById('aiModel').value;
+            const temperature = document.getElementById('temperature').value;
+
+            // Merge user input into the prompt template
+            const mergedPrompt = promptText.replace('${requirements}', requirements.join('; '));
+            
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = 'Processing your request...';
+
+            try {
+                const response = await fetch('/api/identify-area', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        input: requirements.join('; '),
+                        prompt: mergedPrompt,
+                        model: aiModel,
+                        temperature: parseFloat(temperature)
+                    })
+                });
+                const data = await response.json();
+                responseDiv.innerHTML = `<strong>Response:</strong> ${data.result}`;
+            } catch (error) {
+                responseDiv.innerHTML = 'An error occurred: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>

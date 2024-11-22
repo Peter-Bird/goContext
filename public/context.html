@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Software Tool Request</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        #tabs {
+            display: flex;
+            justify-content: center;
+            margin: 20px auto;
+            width: 50%;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #ddd;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            text-align: center;
+        }
+        .tab.active {
+            background-color: #fff;
+            border-top: 2px solid #007bff;
+        }
+        .tabContent {
+            display: none;
+            margin: 50px auto;
+            width: 54%;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px #ccc;
+        }
+        .tabContent.active {
+            display: block;
+        }
+        #response {
+            margin: 20px auto;
+            width: 50%;
+            font-size: 1.2em;
+        }
+        #submitButton {
+            display: block;
+            margin: 20px auto;
+            width: 50%;
+        }
+    </style>
+</head>
+<body>
+    <div id="tabs">
+        <div class="tab active" data-tab="requestTab">Request Software Tool</div>
+        <div class="tab" data-tab="promptTab">Prompt Text</div>
+    </div>
+    
+    <div id="requestTab" class="tabContent active">
+        <form id="requestForm">
+            <h1>Request a Software Tool</h1>
+            <label for="userInput">Declare the context of the software tool you need:</label><br><br>
+            <textarea id="userInput" name="userInput" rows="10" cols="80" required>
+AI-Powered Tool for Automated Golang Tools Development
+            </textarea><br><br>
+        </form>
+    </div>
+    
+    <div id="promptTab" class="tabContent">
+        <h1>Prompt Text</h1>
+
+        <label for="aiModel">Select AI Model:</label><br>
+        <select id="aiModel" form="requestForm" required>
+            <option value="gpt-4o-mini" selected="selected">GPT-4o Mini</option>
+            <option value="gpt-4">GPT-4</option>
+            <option value="gpt-4-mini">GPT-4 Mini</option>
+            <option value="gpt-3.5">GPT-3.5</option>
+            <option value="davinci">Davinci</option>
+            <option value="curie">Curie</option>
+            <option value="babbage">Babbage</option>
+            <option value="ada">Ada</option>
+        </select>
+
+        <br><br>
+
+        <label for="temperature">Enter Temperature:</label><br>
+        <input type="number" id="temperature" name="temperature" form="requestForm" step="0.01" value="0" required><br><br>
+
+        <textarea id="promptText" form="requestForm" rows="10" cols="80" placeholder="Enter additional prompt text here...">
+As an entrepreneur, you need to give your project a context in one sentence.
+
+Does this context: "${userInput}"
+
+Meet this need ?
+
+Please answer in JSON format: { 
+    "Result": "Yes" or "No", 
+    "Details": 
+        If 'No', recommend an effective context.
+        If 'Yes', explain why the its good.
+}
+        </textarea>
+    </div>
+    
+    <div id="submitButton">
+        <input type="submit" form="requestForm" value="Submit">
+    </div>
+    
+    <div id="response"></div>
+    
+    <script>
+        // Tab switching logic
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tabContent');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove 'active' class from all tabs and tab contents
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Add 'active' class to the clicked tab and corresponding content
+                tab.classList.add('active');
+                const tabId = tab.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // Form submission logic
+        document.getElementById('requestForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const userInput = document.getElementById('userInput').value;
+            const promptText = document.getElementById('promptText').value;
+            const aiModel = document.getElementById('aiModel').value;
+            const temperature = document.getElementById('temperature').value;
+
+            // Merge user input into the prompt template
+            const mergedPrompt = promptText.replace('${userInput}', userInput);
+            
+            const responseDiv = document.getElementById('response');
+            responseDiv.innerHTML = 'Processing your request...';
+
+            try {
+                const response = await fetch('/api/identify-area', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        input: userInput,
+                        prompt: mergedPrompt,
+                        model: aiModel,
+                        temperature: parseFloat(temperature)
+                    })
+                });
+                const data = await response.json();
+                responseDiv.innerHTML = `<strong>Identified Area of Interest:</strong> ${data.areaOfInterest}`;
+            } catch (error) {
+                responseDiv.innerHTML = 'An error occurred: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
